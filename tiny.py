@@ -5,18 +5,20 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.tensorboard import SummaryWriter
 
 from modules import *
 
+writer = SummaryWriter("runs/sfcnn_tiny_cifar10")
 
-# Hyperparameters
+# Hyperparamètres
 batch_size = 128
 num_epochs = 200
 learning_rate = 0.001
 weight_decay = 0.05
 warmup_epochs = 10
 
-# Data preprocessing and augmentation for CIFAR
+# Preprocessing and augmentation
 train_transform = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
@@ -29,9 +31,9 @@ val_transform = transforms.Compose([
     transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]),
 ])
 
-# Load CIFAR-10 or CIFAR-100 dataset
-train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)  # Change to CIFAR100 for 100 classes
-val_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=val_transform)  # Change to CIFAR100 for 100 classes
+#loading the dataset
+train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform) 
+val_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=val_transform) 
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
@@ -42,7 +44,7 @@ num_classes = 10 #100 for cifar100
 
 
 #DEFINING THE TINY VERSION
-model = SFCNN(num_classes=num_classes, block_numbers=[4, 8, 20, 4], channels=[48, 96, 192, 384])
+model = SFCNN(num_classes=num_classes, block_numbers=[4, 8, 20, 4], channels=[48, 96, 192, 384]).to(device)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -82,6 +84,12 @@ for epoch in range(num_epochs):
         if i % 100 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}, Acc: {100.*correct/total:.2f}%')
 
+    train_loss = running_loss / len(train_loader)
+    train_acc = 100. * correct / total
+    writer.add_scalar('Loss/Train', train_loss, epoch)
+    writer.add_scalar('Accuracy/Train', train_acc, epoch)
+    writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch)
+
     # Update learning rate
     if epoch >= warmup_epochs:
         scheduler.step()
@@ -103,10 +111,15 @@ for epoch in range(num_epochs):
             val_total += labels.size(0)
             val_correct += predicted.eq(labels).sum().item()
 
-    print(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_loss/len(val_loader):.4f}, Validation Acc: {100.*val_correct/val_total:.2f}%')
+    val_loss /= len(val_loader)
+    val_acc = 100. * val_correct / val_total
+    print(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.2f}%')
+    writer.add_scalar('Loss/Validation', val_loss, epoch)
+    writer.add_scalar('Accuracy/Validation', val_acc, epoch)
 
 # Save the final model
-torch.save(model.state_dict(), 'sfcnn_tiny_cifar10.pth')  # Change to cifar100 for CIFAR-100
+torch.save(model.state_dict(), 'models/sfcnn_tiny_cifar10.pth')  
+writer.close()
 
 
 #res
