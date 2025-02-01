@@ -41,12 +41,23 @@ class SFCNNBlock(nn.Module):
 
         #7 Passing x through these at the end
         if self.downsample:
-            self.layernorm = nn.LayerNorm([out_channels, 56, 56])
+            self.layernorm = nn.LayerNorm([in_channels])
             self.downsample_conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
             self.downsample_pw = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
 
     def forward(self, x):
         input = x
+        out = x
+
+        if self.downsample:
+            B, C, H, W = out.size()
+            out = out.permute(0, 2, 3, 1)  # B, H, W, C (need to put C in last pos for LN)
+            out = self.layernorm(out) # apply layernorm in the beginning
+            out = out.permute(0, 3, 1, 2) # back to original shape
+
+            #7 If downsample is True, apply 3x3 DWConv and PWConv to input x
+            input = self.downsample_conv(x)
+            input = self.downsample_pw(input)
 
         out = self.dwconv1(input)
         out = self.pwconv1(out)
@@ -56,10 +67,7 @@ class SFCNNBlock(nn.Module):
         out = self.gsilu(out) 
         out = self.pwconv2(out) # Output of step 5
 
-        #7 If downsample is True, apply 3x3 DWConv and PWConv to input x
-        if self.downsample:
-            input = self.downsample_conv(x)
-            input = self.downsample_pw(input)
+
         #6 Input of step 1 and output of step 5 are added
         out += input
         return out
@@ -75,8 +83,10 @@ class SFCNN(nn.Module):
         self.stage3 = self.make_stage(block_numbers[2], channels[2], channels[3], stride=2)
         self.stage4 = self.make_stage(block_numbers[3], channels[3], channels[3], stride=1)
 
+        self.last_conv = nn.Conv2d(channels[3], 1024, kernel_size=1, stride=1, padding=0, bias=False)
+        
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(channels[3], num_classes)
+        self.fc = nn.Linear(1024, num_classes)
 
     def make_stage(self, block_nb, in_channels, out_channels, stride):
         layers = []
@@ -92,6 +102,8 @@ class SFCNN(nn.Module):
         x = self.stage2(x)
         x = self.stage3(x)
         x = self.stage4(x)
+
+        x = self.last_conv(x)
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
