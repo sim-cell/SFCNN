@@ -67,7 +67,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 num_classes = 10
 
 # Models
-sfcnn_tiny = SFCNN(num_classes=num_classes, block_numbers=[4, 8, 20, 4], channels=[48, 96, 192, 384]).to(device)
+#sfcnn_tiny = SFCNN(num_classes=num_classes, block_numbers=[4, 8, 20, 4], channels=[48, 96, 192, 384]).to(device)
 baseline_cnn_small = CNN(num_classes=num_classes, kernel_size=3).to(device)
 #baseline_cnn_large = CNN(num_classes=num_classes, kernel_size=7).to(device)
 baseline_vit =  ViT(
@@ -84,9 +84,9 @@ baseline_vit =  ViT(
 
 models = {
     #"SFCNN-Tiny": sfcnn_tiny,
-    "Baseline-CNN-Small": baseline_cnn_small,
+    #"Baseline-CNN-Small": baseline_cnn_small,
     #"Baseline-CNN-Large": baseline_cnn_large,
-    #"Baseline-ViT": baseline_vit
+    "Baseline-ViT": baseline_vit
 }
 
 criterion = nn.CrossEntropyLoss()
