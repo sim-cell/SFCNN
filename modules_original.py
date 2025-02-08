@@ -1,3 +1,5 @@
+#SFCNN WITHOUT EXPANDING 
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,24 +23,23 @@ class DWCONV(nn.Module):
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, groups=in_channels, bias=False)
 
 class SFCNNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, downsample=False, expand_ratio=4):
+    def __init__(self, in_channels, out_channels, stride=1, downsample=False):
         super(SFCNNBlock, self).__init__()
 
-        expanded_channels = in_channels * expand_ratio
         self.downsample = downsample #used in Type 2 with downsample
         if downsample : stride=2 
 
         #1 Applying 3x3 DWConv (groups parameter separates channels, performing depthwise convolution)
         self.dwconv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=stride, padding=1, groups=in_channels, bias=False)
         #2 Pass through PWConv and SiLU
-        self.pwconv1 = nn.Conv2d(in_channels, expanded_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.pwconv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
         self.silu = nn.SiLU()
         #3 Applying 3x3 DWConv
-        self.dwconv2 = nn.Conv2d(expanded_channels, expanded_channels, kernel_size=3, stride=1, padding=1, groups=expanded_channels, bias=False)
+        self.dwconv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, groups=out_channels, bias=False)
         #4 Pass through GSILU
         self.gsilu = GSiLU()
         #5 Pass through PWConv
-        self.pwconv2 = nn.Conv2d( expanded_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.pwconv2 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
 
         #7 Passing x through these at the end
         if self.downsample:
@@ -80,22 +81,20 @@ class SFCNNBlock(nn.Module):
         out += input_downsampled if self.downsample else input
         return out
 
-
 class SFCNN(nn.Module):
-    def __init__(self, num_classes=1000, block_numbers=[4, 8, 20, 4], channels=[48, 96, 192, 384],expand_ratio=4):
+    def __init__(self, num_classes=1000, block_numbers=[4, 8, 20, 4], channels=[48, 96, 192, 384]):
         super(SFCNN, self).__init__()
 
         self.stem = nn.Conv2d(3, channels[0], kernel_size=3, stride=2, padding=1, bias=False)
 
-        self.stage1 = self.make_stage(block_numbers[0], channels[0], channels[1], stride=2, expand_ratio=expand_ratio)
-        self.stage2 = self.make_stage(block_numbers[1], channels[1], channels[2], stride=2, expand_ratio=expand_ratio)
-        self.stage3 = self.make_stage(block_numbers[2], channels[2], channels[3], stride=2, expand_ratio=expand_ratio)
-        self.stage4 = self.make_stage(block_numbers[3], channels[3], channels[3], stride=1, expand_ratio=expand_ratio)
+        self.stage1 = self.make_stage(block_numbers[0], channels[0], channels[1], stride=2)
+        self.stage2 = self.make_stage(block_numbers[1], channels[1], channels[2], stride=2)
+        self.stage3 = self.make_stage(block_numbers[2], channels[2], channels[3], stride=2)
+        self.stage4 = self.make_stage(block_numbers[3], channels[3], channels[3], stride=1)
 
         self.last_conv = nn.Conv2d(channels[3], 1024, kernel_size=1, stride=1, padding=0, bias=False)
         
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        #self.fc = nn.Linear(1024, num_classes)
         self.classifier = nn.Sequential(
             nn.Linear(1024, 2048),  
             nn.ReLU(),
@@ -103,13 +102,12 @@ class SFCNN(nn.Module):
             nn.ReLU(),
             nn.Linear(1024, num_classes) 
         )
-        
 
-    def make_stage(self, block_nb, in_channels, out_channels, stride, expand_ratio):
+    def make_stage(self, block_nb, in_channels, out_channels, stride):
         layers = []
-        layers.append(SFCNNBlock(in_channels, out_channels, stride=stride, downsample=True, expand_ratio=expand_ratio))
+        layers.append(SFCNNBlock(in_channels, out_channels, stride=stride, downsample=True))
         for _ in range(1, block_nb):
-            layers.append(SFCNNBlock(out_channels, out_channels, stride=1, expand_ratio=expand_ratio))
+            layers.append(SFCNNBlock(out_channels, out_channels, stride=1))
         return nn.Sequential(*layers)
 
     def forward(self, x):

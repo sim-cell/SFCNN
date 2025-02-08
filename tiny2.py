@@ -7,9 +7,9 @@ from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
 
-from modules import *
+from idek import *
 
-writer = SummaryWriter("runs/sfcnn_tiny_cifar10")
+writer = SummaryWriter("runs/sfcnn_tiny_cifar10_noexpansion")
 
 # Hyperparamètres
 batch_size = 128

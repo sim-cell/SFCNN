@@ -1,3 +1,4 @@
+#CIFAR 10 tests on different SFCNNs
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,15 +6,18 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.tensorboard import SummaryWriter
 
 from modules import *
 
-version = "Tiny" #CHANGE THIS TO CHANGE THE VERSION
+version = "P" #CHANGE THIS TO CHANGE THE VERSION
 
 config = {
-            "Tiny": [48, [4, 8, 20, 4]],
-            "Small": [64, [6, 12, 28, 6]],
-            "Base": [80, [8, 15, 35, 8]]
+            "P": [32, [3, 4, 12, 3],4],
+            "N": [40, [3, 6, 17, 3],4],
+            "T": [48, [4, 8, 20, 4],4],
+            "S": [64, [6, 12, 28, 6],3],
+            "B": [80, [8, 15, 35, 8],3]
         }
 
 # Hyperparameters
@@ -22,6 +26,10 @@ num_epochs = 200
 learning_rate = 0.001
 weight_decay = 0.05
 warmup_epochs = 10
+
+expand_ratio = config[version][2]
+
+writer = SummaryWriter("runs/sfcnn_"+version+"_cifar10")
 
 # Data preprocessing and augmentation for CIFAR
 train_transform = transforms.Compose([
@@ -36,18 +44,20 @@ val_transform = transforms.Compose([
     transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]),
 ])
 
-# Load CIFAR-10 or CIFAR-100 dataset
+# Loading CIFAR-10 or CIFAR-100 dataset
 train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)  # Change to CIFAR100 for 100 classes
 val_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=val_transform)  # Change to CIFAR100 for 100 classes
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-# Initialize the model, loss function, and optimizer
+
+# _________________________________________
+
+# Initializing : the model, loss function, and optimizer
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-model = SFCNN(num_classes=10, block_numbers=config[version][1], channels=[config[version][0]*2**i for i in range(4)]) # Change to 100 for CIFAR-100
+model = SFCNN(num_classes=10, block_numbers=config[version][1], channels=[config[version][0]*2**i for i in range(4)],expand_ratio=expand_ratio) # Change to 100 for CIFAR-100
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs)
