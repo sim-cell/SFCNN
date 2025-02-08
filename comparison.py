@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 
 from modules import *
 
@@ -29,7 +29,7 @@ warmup_epochs = 10
 
 expand_ratio = config[version][2]
 
-writer = SummaryWriter("runs/sfcnn_"+version+"_cifar10")
+#writer = SummaryWriter("runs/sfcnn_"+version+"_cifar10")
 
 # Data preprocessing and augmentation for CIFAR
 train_transform = transforms.Compose([
@@ -51,7 +51,9 @@ val_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transf
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-
+with open("results/sfcnn_"+version+"_cifar10.txt", "w") as f:
+    pass
+    
 # _________________________________________
 
 # Initializing : the model, loss function, and optimizer
@@ -94,6 +96,8 @@ for epoch in range(num_epochs):
         correct += predicted.eq(labels).sum().item()
 
         if i % 100 == 0:
+            with open("results/sfcnn_"+version+"_cifar10.txt", "a") as f:
+                f.write(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}, Acc: {100.*correct/total:.2f}%\n')
             print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}, Acc: {100.*correct/total:.2f}%')
     if epoch >= warmup_epochs:
         scheduler.step()
@@ -115,8 +119,11 @@ for epoch in range(num_epochs):
             val_total += labels.size(0)
             val_correct += predicted.eq(labels).sum().item()
 
+    with open("results/sfcnn_"+version+"_cifar10.txt", "a") as f:
+        f.write(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_loss/len(val_loader):.4f}, Validation Acc: {100.*val_correct/val_total:.2f}%\n')
     print(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_loss/len(val_loader):.4f}, Validation Acc: {100.*val_correct/val_total:.2f}%')
 
 # Saving the model
 torch.save(model.state_dict(), 'sfcnn_'+version+'_cifar10.pth')  # Change to cifar100 for CIFAR-100
+#writer.close()
 

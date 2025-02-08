@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
 
-from idek import *
+from modules_original import *
 
 writer = SummaryWriter("runs/sfcnn_tiny_cifar10_noexpansion")
 
