@@ -5,11 +5,13 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 
 from modules import *
+with open("results/sfcnn_pico_cifar10.txt", "w") as f:
+    pass
 
-writer = SummaryWriter("runs/sfcnn_pico_cifar10")
+#writer = SummaryWriter("runs/sfcnn_pico_cifar10")
 
 # Hyperparamètres
 batch_size = 128
@@ -88,9 +90,9 @@ for epoch in range(num_epochs):
         #     print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}, Acc: {100.*correct/total:.2f}%')
     train_loss = running_loss / len(train_loader)
     train_acc = 100. * correct / total
-    writer.add_scalar('Loss/Train', train_loss, epoch)
-    writer.add_scalar('Accuracy/Train', train_acc, epoch)
-    writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch)
+    # writer.add_scalar('Loss/Train', train_loss, epoch)
+    # writer.add_scalar('Accuracy/Train', train_acc, epoch)
+    # writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch)
 
     # Update learning rate
     if epoch >= warmup_epochs:
@@ -116,10 +118,13 @@ for epoch in range(num_epochs):
     val_loss /= len(val_loader)
     val_acc = 100. * val_correct / val_total
     print(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.2f}%')
-    writer.add_scalar('Loss/Validation', val_loss, epoch)
-    writer.add_scalar('Accuracy/Validation', val_acc, epoch)
+    with open("results/sfcnn_pico_cifar10.txt", "a") as f:
+        f.write(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_loss:.4f}, Validation Acc: {100.*val_correct/val_total:.2f}%\n')
+
+    # writer.add_scalar('Loss/Validation', val_loss, epoch)
+    # writer.add_scalar('Accuracy/Validation', val_acc, epoch)
 
 # Save the final model
 torch.save(model.state_dict(), 'models/sfcnn_pico_cifar10_run2.pth')  
-writer.close()
+#writer.close()
 
