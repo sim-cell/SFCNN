@@ -11,6 +11,7 @@ from modules import *
 
 writer = SummaryWriter("runs/sfcnn_pico_cifar10")
 
+
 # Hyperparamètres
 batch_size = 128
 num_epochs = 200
@@ -38,15 +39,15 @@ val_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transf
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-# Init the model, loss function, and optimizer
+# Initializing
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 num_classes = 10 #100 for cifar100
 
 
 #DEFINE VERSION
-print("Creating SFCNN-B")
+print("Creating SFCNN-P")
 model = SFCNN(num_classes=num_classes, block_numbers=[3, 4, 12, 3], channels=[32*2**i for i in range(4)],expand_ratio=4).to(device)
-print("Executing SFCNN-B")
+print("Executing SFCNN-P")
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs)
@@ -58,7 +59,7 @@ def warmup_scheduler(epoch, warmup_epochs, optimizer):
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
 
-# Training loop
+#Training 
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
@@ -92,11 +93,10 @@ for epoch in range(num_epochs):
     writer.add_scalar('Accuracy/Train', train_acc, epoch)
     writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch)
 
-    # Update learning rate
+
     if epoch >= warmup_epochs:
         scheduler.step()
 
-    # Validation
     model.eval()
     val_loss = 0.0
     val_correct = 0
@@ -120,6 +120,6 @@ for epoch in range(num_epochs):
     writer.add_scalar('Accuracy/Validation', val_acc, epoch)
 
 # Save the final model
-torch.save(model.state_dict(), 'models/sfcnn_pico_cifar10_run2.pth')  
+torch.save(model.state_dict(), 'models/sfcnn_pico_cifar10_expanded.pth')  
 writer.close()
 

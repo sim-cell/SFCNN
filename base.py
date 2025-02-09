@@ -39,6 +39,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, nu
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
 # Init the model, loss function, and optimizer
+#print(torch.cuda.is_available())
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 num_classes = 10 #100 for cifar100
 
@@ -120,6 +121,6 @@ for epoch in range(num_epochs):
     writer.add_scalar('Accuracy/Validation', val_acc, epoch)
 
 # Save the final model
-torch.save(model.state_dict(), 'models/sfcnn_base_cifar10_run2.pth')  
+torch.save(model.state_dict(), 'models/sfcnn_base_cifar10.pth')  
 writer.close()
 

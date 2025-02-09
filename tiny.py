@@ -65,7 +65,6 @@ for epoch in range(num_epochs):
     correct = 0
     total = 0
 
-    # Warmup learning rate
     warmup_scheduler(epoch, warmup_epochs, optimizer)
 
     for i, (inputs, labels) in enumerate(train_loader):
@@ -92,11 +91,9 @@ for epoch in range(num_epochs):
     writer.add_scalar('Accuracy/Train', train_acc, epoch)
     writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch)
 
-    # Update learning rate
     if epoch >= warmup_epochs:
         scheduler.step()
 
-    # Validation
     model.eval()
     val_loss = 0.0
     val_correct = 0
