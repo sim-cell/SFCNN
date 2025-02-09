@@ -4,7 +4,7 @@
 
 import torch
 from thop import profile, clever_format
-from modules import * 
+from modules_no_expansion import * 
 from torch.utils.tensorboard import SummaryWriter
 from vit_pytorch import ViT
 from convnext import ConvNeXt
@@ -45,16 +45,16 @@ input_dims = 32
 input = torch.randn(1, 3, input_dims, input_dims)  # mock image
 
 
-model = CNN(num_classes=num_classes)
-model.eval()
-with open(f"results/flops/flops_cnn{input_dims}.txt", "w") as f:
-    f.write(f"{'Model':<10}{'Input Shape':<30}{'FLOPs':<20}{'Params (M)':<20}\n")
-    f.write("="*70 + "\n")
-    macs, params = apply_flop(model, input)
-    print(f"Dimensions: {input.shape}")
-    print(f"CNN FLOPs: {macs}")
-    print(f"CNN Params: {params}")
-    f.write(f"{'CNN':<10}{str(input.shape):<30}{macs:<20}{params:<20}\n")
+# model = CNN(num_classes=num_classes)
+# model.eval()
+# with open(f"results/flops/flops_cnn{input_dims}.txt", "w") as f:
+#     f.write(f"{'Model':<10}{'Input Shape':<30}{'FLOPs':<20}{'Params (M)':<20}\n")
+#     f.write("="*70 + "\n")
+#     macs, params = apply_flop(model, input)
+#     print(f"Dimensions: {input.shape}")
+#     print(f"CNN FLOPs: {macs}")
+#     print(f"CNN Params: {params}")
+#     f.write(f"{'CNN':<10}{str(input.shape):<30}{macs:<20}{params:<20}\n")
 
 
 config = {
@@ -65,7 +65,7 @@ config = {
             "B": [80, [8, 15, 35, 8],3]
         }
 
-with open(f"results/flops/flops_sfcnn{input_dims}_biggerratio.txt", "w") as f:
+with open(f"results/flops/flops_sfcnn{input_dims}_noexp.txt", "w") as f:
     f.write(f"{'Version':<10}{'Input Shape':<30}{'FLOPs':<20}{'Params (M)':<20}\n")
     f.write("="*70 + "\n")
 
@@ -80,29 +80,29 @@ with open(f"results/flops/flops_sfcnn{input_dims}_biggerratio.txt", "w") as f:
         print(version + f" Params: {params}")
         f.write(f"{version:<10}{str(input.shape):<20}\t{macs:<20}{params:<20}\n")
 
-model = ViT(
-    image_size=32,
-    patch_size=4,
-    num_classes=num_classes,
-    dim=512,
-    depth=6,
-    heads=8,
-    mlp_dim=512,
-    dropout=0.1,
-    emb_dropout=0.1
-)
+# model = ViT(
+#     image_size=32,
+#     patch_size=4,
+#     num_classes=num_classes,
+#     dim=512,
+#     depth=6,
+#     heads=8,
+#     mlp_dim=512,
+#     dropout=0.1,
+#     emb_dropout=0.1
+# )
 
-model.eval()
-input = torch.randn(1, 3, 32, 32)  
+# model.eval()
+# input = torch.randn(1, 3, 32, 32)  
 
-with open("results/flops/flops_vit.txt", "w") as f:
-    f.write(f"{'Model':<10}{'Input Shape':<30}{'FLOPs':<20}{'Params (M)':<20}\n")
-    f.write("="*70 + "\n")
-    macs, params = apply_flop(model, input)
-    print(f"Dimensions: {input.shape}")
-    print(f"ViT FLOPs: {macs}")
-    print(f"ViT Params: {params}")
-    f.write(f"{'ViT':<10}{str(input.shape):<30}{macs:<20}{params:<20}\n")
+# with open("results/flops/flops_vit.txt", "w") as f:
+#     f.write(f"{'Model':<10}{'Input Shape':<30}{'FLOPs':<20}{'Params (M)':<20}\n")
+#     f.write("="*70 + "\n")
+#     macs, params = apply_flop(model, input)
+#     print(f"Dimensions: {input.shape}")
+#     print(f"ViT FLOPs: {macs}")
+#     print(f"ViT Params: {params}")
+#     f.write(f"{'ViT':<10}{str(input.shape):<30}{macs:<20}{params:<20}\n")
 
 # IMAGE_SIZE = 32
 # NUM_CLASSES = 10
