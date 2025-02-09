@@ -1,3 +1,5 @@
+# Adapting ConvNeXt to cifar10 dataset
+# ORIGINAL CODE : https://juliusruseckas.github.io/ml/convnext-cifar10.html
 import torch
 import torch.nn as nn
 import torch.optim as optim

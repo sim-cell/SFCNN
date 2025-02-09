@@ -1,0 +1,3 @@
+Model     Input Shape                   FLOPs               Params (M)          
+======================================================================
+ConvNext Tinytorch.Size([1, 3, 32, 32])    307.560M            6.376M              

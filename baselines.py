@@ -30,8 +30,8 @@ class CNN(nn.Module):
         return x
 
 
-model_name = "Baseline-CNN-Small"
-#model_name = "Baseline-ViT"
+#model_name = "Baseline-CNN-Small"
+model_name = "Baseline-ViT"
 # TensorBoard setup
 writer = SummaryWriter("runs/" + model_name)
 
@@ -68,7 +68,7 @@ num_classes = 10
 
 # Models
 #sfcnn_tiny = SFCNN(num_classes=num_classes, block_numbers=[4, 8, 20, 4], channels=[48, 96, 192, 384]).to(device)
-baseline_cnn_small = CNN(num_classes=num_classes, kernel_size=3).to(device)
+#baseline_cnn_small = CNN(num_classes=num_classes, kernel_size=3).to(device)
 #baseline_cnn_large = CNN(num_classes=num_classes, kernel_size=7).to(device)
 baseline_vit =  ViT(
     image_size=32,
