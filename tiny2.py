@@ -120,7 +120,7 @@ for epoch in range(num_epochs):
     writer.add_scalar('Accuracy/Validation', val_acc, epoch)
 
 # Save the final model
-torch.save(model.state_dict(), 'models/sfcnn_tiny_cifar10_run2.pth')  
+torch.save(model.state_dict(), 'models/sfcnn_tiny_cifar10_notexpanded.pth')  
 writer.close()
 
 
