@@ -1,5 +1,7 @@
 # Adapting ConvNeXt to cifar10 dataset
-# ORIGINAL CODE : https://juliusruseckas.github.io/ml/convnext-cifar10.html
+# This code was highly inspired by this implementation : https://juliusruseckas.github.io/ml/convnext-cifar10.html
+# ORIGINAL CODE : https://github.com/facebookresearch/ConvNeXt/tree/main
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -158,86 +160,98 @@ class ConvNeXt(nn.Sequential):
         assert len(parameters_decay) + len(parameters_no_decay) == len(list(model.parameters()))
 
         return parameters_decay, parameters_no_decay
+    
 
-# Initialize the model
-model = ConvNeXt(NUM_CLASSES,
-                 channel_list=[64, 128, 256, 512],
-                 num_blocks_list=[2, 2, 2, 2],
-                 kernel_size=7, patch_size=1,
-                 res_p_drop=0.).to(DEVICE)
+#For segmentation
+class ConvNeXtFeatureExtractor(nn.Sequential):
+    def __init__(self, channel_list, num_blocks_list, kernel_size, patch_size, in_channels=3, res_p_drop=0.):
+        super().__init__(
+            Stem(in_channels, channel_list[0], patch_size),
+            ConvNeXtBody(channel_list[0], channel_list, num_blocks_list, kernel_size, res_p_drop)
+        )
 
-# Loss function and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-scheduler = CosineAnnealingLR(optimizer, T_max=EPOCHS - WARMUP_EPOCHS)
+ 
+#######################################################
+## Uncomment to train the model on cifar-10
+# # Initialize the model
+# model = ConvNeXt(NUM_CLASSES,
+#                  channel_list=[64, 128, 256, 512],
+#                  num_blocks_list=[2, 2, 2, 2],
+#                  kernel_size=7, patch_size=1,
+#                  res_p_drop=0.).to(DEVICE)
 
-# TensorBoard writer
-writer = SummaryWriter("runs/convnext_cifar10")
+# # Loss function and optimizer
+# criterion = nn.CrossEntropyLoss()
+# optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+# scheduler = CosineAnnealingLR(optimizer, T_max=EPOCHS - WARMUP_EPOCHS)
 
-# Warmup scheduler
-def warmup_scheduler(epoch, warmup_epochs, optimizer):
-    if epoch < warmup_epochs:
-        lr = LEARNING_RATE * (epoch + 1) / warmup_epochs
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+# # TensorBoard writer
+# writer = SummaryWriter("runs/convnext_cifar10")
 
-# Training loop
-for epoch in range(EPOCHS):
-    model.train()
-    running_loss = 0.0
-    correct = 0
-    total = 0
+# # Warmup scheduler
+# def warmup_scheduler(epoch, warmup_epochs, optimizer):
+#     if epoch < warmup_epochs:
+#         lr = LEARNING_RATE * (epoch + 1) / warmup_epochs
+#         for param_group in optimizer.param_groups:
+#             param_group['lr'] = lr
 
-    # Warmup learning rate
-    warmup_scheduler(epoch, WARMUP_EPOCHS, optimizer)
+# # Training loop
+# for epoch in range(EPOCHS):
+#     model.train()
+#     running_loss = 0.0
+#     correct = 0
+#     total = 0
 
-    for i, (inputs, labels) in enumerate(train_loader):
-        inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+#     # Warmup learning rate
+#     warmup_scheduler(epoch, WARMUP_EPOCHS, optimizer)
 
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+#     for i, (inputs, labels) in enumerate(train_loader):
+#         inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
 
-        running_loss += loss.item()
-        _, predicted = outputs.max(1)
-        total += labels.size(0)
-        correct += predicted.eq(labels).sum().item()
+#         optimizer.zero_grad()
+#         outputs = model(inputs)
+#         loss = criterion(outputs, labels)
+#         loss.backward()
+#         optimizer.step()
 
-    train_loss = running_loss / len(train_loader)
-    train_acc = 100. * correct / total
-    writer.add_scalar('Loss/Train', train_loss, epoch)
-    writer.add_scalar('Accuracy/Train', train_acc, epoch)
-    writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch)
+#         running_loss += loss.item()
+#         _, predicted = outputs.max(1)
+#         total += labels.size(0)
+#         correct += predicted.eq(labels).sum().item()
 
-    # Update learning rate
-    if epoch >= WARMUP_EPOCHS:
-        scheduler.step()
+#     train_loss = running_loss / len(train_loader)
+#     train_acc = 100. * correct / total
+#     writer.add_scalar('Loss/Train', train_loss, epoch)
+#     writer.add_scalar('Accuracy/Train', train_acc, epoch)
+#     writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch)
 
-    # Validation
-    model.eval()
-    val_loss = 0.0
-    val_correct = 0
-    val_total = 0
+#     # Update learning rate
+#     if epoch >= WARMUP_EPOCHS:
+#         scheduler.step()
 
-    with torch.no_grad():
-        for inputs, labels in val_loader:
-            inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
+#     # Validation
+#     model.eval()
+#     val_loss = 0.0
+#     val_correct = 0
+#     val_total = 0
 
-            val_loss += loss.item()
-            _, predicted = outputs.max(1)
-            val_total += labels.size(0)
-            val_correct += predicted.eq(labels).sum().item()
+#     with torch.no_grad():
+#         for inputs, labels in val_loader:
+#             inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+#             outputs = model(inputs)
+#             loss = criterion(outputs, labels)
 
-    val_loss /= len(val_loader)
-    val_acc = 100. * val_correct / val_total
-    print(f'Epoch [{epoch+1}/{EPOCHS}], Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.2f}%')
-    writer.add_scalar('Loss/Validation', val_loss, epoch)
-    writer.add_scalar('Accuracy/Validation', val_acc, epoch)
+#             val_loss += loss.item()
+#             _, predicted = outputs.max(1)
+#             val_total += labels.size(0)
+#             val_correct += predicted.eq(labels).sum().item()
 
-# Save the final model
-torch.save(model.state_dict(), 'models/convnext_cifar10.pth')
-writer.close()
+#     val_loss /= len(val_loader)
+#     val_acc = 100. * val_correct / val_total
+#     print(f'Epoch [{epoch+1}/{EPOCHS}], Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.2f}%')
+#     writer.add_scalar('Loss/Validation', val_loss, epoch)
+#     writer.add_scalar('Accuracy/Validation', val_acc, epoch)
+
+# # Save the final model
+# torch.save(model.state_dict(), 'models/convnext_cifar10.pth')
+# writer.close()
