@@ -1,0 +1,5 @@
+Test Results:
+SFCNN_T: Accuracy = 82.80%, Avg Loss = 1.1499
+Baseline_CNN: Accuracy = 85.74%, Avg Loss = 0.6173
+ConvNeXT: Accuracy = 88.64%, Avg Loss = 0.7587
+ViT - Accuracy: 89.18%, Avg Loss: 0.5824
